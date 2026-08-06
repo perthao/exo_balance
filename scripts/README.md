@@ -1,0 +1,117 @@
+# scripts 使用说明
+
+当前最终路线：`38.5 kg` 无绳模型 + 抗扰动站立训练。早期悬挂查看、步态 viewer、普通站立长训脚本已经删除，不再作为当前版本使用。
+
+所有命令都从项目根目录运行：
+
+```bash
+cd ~/research/exo_balance
+```
+
+## 1. 生成并检查 XML
+
+```bash
+./scripts/run_standing_scene.sh
+```
+
+这个脚本会自动激活 `unitree_rl_mjlab`，然后执行：
+
+```text
+重新生成 exo_balance_standing.xml
+重新生成 scene_exo_balance_standing.xml
+检查 MuJoCo 能否加载
+输出 nq/nv/nu/body 数量和总质量
+```
+
+有图形界面时可以打开 MuJoCo viewer：
+
+```bash
+./scripts/run_standing_scene.sh --view
+```
+
+## 2. 抗扰动训练
+
+```bash
+./scripts/run_push_train.sh
+```
+
+默认参数：
+
+```text
+任务名：ExoBalance-Stand-Push-Flat
+并行环境：256
+训练轮次：6000
+预计时间：约 50-60 分钟
+日志目录：logs/rsl_rl/exo_balance_stand_push/日期时间/
+```
+
+如果想临时改训练轮次或并行环境，直接在脚本后面追加参数：
+
+```bash
+./scripts/run_push_train.sh --agent.max-iterations=3000
+./scripts/run_push_train.sh --env.scene.num-envs=512 --agent.max-iterations=6000
+```
+
+训练时重点看这些指标：
+
+```text
+Mean episode length 越接近 600 越好
+Episode_Termination/fell_over 越接近 0 越好
+Episode_Termination/base_too_low 越接近 0 越好
+Episode_Reward/base_xy_position_l2 绝对值越小，说明被推后漂移越少
+Episode_Metrics/mean_action_acc 越小，动作越平稳
+```
+
+## 3. 看训练结果
+
+训练结束后，选择最新 checkpoint，例如：
+
+```text
+logs/rsl_rl/exo_balance_stand_push/日期时间/model_5999.pt
+```
+
+用策略回放：
+
+```bash
+source ~/miniconda3/etc/profile.d/conda.sh
+conda activate unitree_rl_mjlab
+export MPLCONFIGDIR=/tmp/matplotlib
+export PYTHONPATH="$PWD:$PWD/../robot_rl/unitree_rl_mjlab:$PYTHONPATH"
+
+python3 scripts/play.py ExoBalance-Stand-Push-Flat \
+  --checkpoint-file logs/rsl_rl/exo_balance_stand_push/日期时间/model_5999.pt \
+  --device cuda:0
+```
+
+如果没有图形界面，可以先只做 CPU 零动作检查：
+
+```bash
+python3 scripts/play.py ExoBalance-Stand-Push-Flat --agent zero --no-terminations True --device cpu
+```
+
+## 4. 当前保留脚本
+
+```text
+make_standing_scene.py   生成当前无绳训练 XML
+run_standing_scene.sh    一键生成并检查 XML
+train.py                 训练入口，命名对照宇树项目
+play.py                  回放/测试入口，命名对照宇树项目
+run_push_train.sh        一键抗扰动训练
+```
+
+## 5. 微调位置
+
+XML、质量、电机、足底接触参数看：
+
+```text
+src/assets/robots/exo_balance/xmls/README.md
+```
+
+奖励、扰动力、PPO 参数看：
+
+```text
+src/tasks/stand/config/exo_balance/env_cfgs.py
+src/tasks/stand/config/exo_balance/rl_cfg.py
+```
+
+注意：旧 70 kg/配重版本已经删除。旧 checkpoint 不建议继续用于当前 38.5 kg 模型，当前版本请重新训练。

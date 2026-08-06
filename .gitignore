@@ -1,0 +1,46 @@
+# Python 缓存
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# 本地环境和编辑器
+.env
+.env.*
+.venv/
+venv/
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# 训练日志、模型权重和实验输出
+logs/
+wandb/
+runs/
+outputs/
+*.log
+*.pt
+*.pth
+*.onnx
+
+# MuJoCo / Warp / 临时缓存
+*.mjb
+.mujoco/
+.cache/
+
+# URDF 原始压缩包和重复导出副本
+# 训练真正使用的 STL 已复制到 src/assets/robots/exo_balance/xmls/assets/，需要保留。
+urdf/*.zip
+urdf/**/*.zip
+urdf/extracted/part_*.stl
+urdf/extracted/meshes/
+
+# 临时文件
+tmp/
+temp/
+*.tmp

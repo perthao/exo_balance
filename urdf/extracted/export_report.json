@@ -1,0 +1,10 @@
+{
+  "status": "ok",
+  "warnings": [
+    "Model has 3 unassigned CAD parts that will not be exported in any link: part_011, part_012, part_062"
+  ],
+  "errors": [],
+  "urdf_file": "robot.urdf",
+  "mesh_mode": "per_part",
+  "mesh_files": []
+}

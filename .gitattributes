@@ -1,0 +1,10 @@
+*.py text eol=lf
+*.sh text eol=lf
+*.md text eol=lf
+*.xml text eol=lf
+*.urdf text eol=lf
+*.json text eol=lf
+*.stl binary
+*.pt binary
+*.pth binary
+*.wandb binary
