@@ -6,6 +6,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any
 
 import torch
 import tyro
@@ -41,6 +42,26 @@ class PlayConfig:
     device: str | None = None
     viewer: str = "auto"
     no_terminations: bool = False
+    test_push: bool = True
+    push_scale: float = 1.0
+
+
+def configure_test_push(env_cfg: Any, enabled: bool, scale: float) -> None:
+    """设置回放测试扰动；默认打开，也可以关闭或整体放大/缩小。"""
+    event = env_cfg.events.get("random_body_impulse")
+    if not enabled:
+        # 关掉测试扰动后，只看策略自然站立状态。
+        env_cfg.events.pop("random_body_impulse", None)
+        return
+    if event is None:
+        return
+    if scale <= 0.0:
+        raise ValueError("--push-scale 必须大于 0")
+
+    params = event.params
+    # 只缩放力和力矩，持续时间/间隔保持环境配置里的测试节奏。
+    params["force_range"] = tuple(float(v) * scale for v in params["force_range"])
+    params["torque_range"] = tuple(float(v) * scale for v in params["torque_range"])
 
 
 def run_play(task_id: str, cfg: PlayConfig) -> None:
@@ -55,6 +76,7 @@ def run_play(task_id: str, cfg: PlayConfig) -> None:
         env_cfg.scene.num_envs = cfg.num_envs
     if cfg.no_terminations:
         env_cfg.terminations = {}
+    configure_test_push(env_cfg, enabled=cfg.test_push, scale=cfg.push_scale)
 
     env = ManagerBasedRlEnv(cfg=env_cfg, device=device)
     env = RslRlVecEnvWrapper(env, clip_actions=agent_cfg.clip_actions)
@@ -84,13 +106,23 @@ def run_play(task_id: str, cfg: PlayConfig) -> None:
     resolved_viewer = cfg.viewer
     if resolved_viewer == "auto":
         resolved_viewer = "native"
-    if resolved_viewer == "native":
-        NativeMujocoViewer(env, policy).run()
-    elif resolved_viewer == "viser":
-        ViserPlayViewer(env, policy).run()
-    else:
-        raise RuntimeError(f"不支持 viewer: {cfg.viewer}")
-    env.close()
+    viewer = None
+    try:
+        if resolved_viewer == "native":
+            viewer = NativeMujocoViewer(env, policy)
+            viewer.run()
+        elif resolved_viewer == "viser":
+            viewer = ViserPlayViewer(env, policy)
+            viewer.run()
+        else:
+            raise RuntimeError(f"不支持 viewer: {cfg.viewer}")
+    except KeyboardInterrupt:
+        # 关闭窗口后如果终端还没回来，按一次 Ctrl+C 会走这里并清理资源。
+        print("收到 Ctrl+C，正在关闭 viewer 和环境。")
+    finally:
+        if viewer is not None:
+            viewer.close()
+        env.close()
 
 
 def main() -> None:

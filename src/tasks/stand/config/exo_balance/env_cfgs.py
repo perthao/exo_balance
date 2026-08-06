@@ -10,6 +10,30 @@ from src.tasks.stand import mdp
 from src.tasks.stand.stand_env_cfg import make_stand_env_cfg
 
 
+def add_random_push_event(
+    cfg: ManagerBasedRlEnvCfg,
+    *,
+    force_range: tuple[float, float],
+    torque_range: tuple[float, float],
+    duration_s: tuple[float, float],
+    cooldown_s: tuple[float, float],
+) -> None:
+    """给环境添加随机推力事件，训练和测试共用这一处定义。"""
+    cfg.events["random_body_impulse"] = EventTermCfg(
+        func=mdp.apply_body_impulse,
+        mode="step",
+        params={
+            # 推 base_link，比推脚或小连杆更像外界撞到身体。
+            "asset_cfg": SceneEntityCfg("robot", body_names=("base_link",)),
+            "force_range": force_range,
+            "torque_range": torque_range,
+            "duration_s": duration_s,
+            "cooldown_s": cooldown_s,
+            "body_point_offset": (0.0, 0.0, 0.18),
+        },
+    )
+
+
 def exo_balance_stand_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     """创建外骨骼平地无绳站立任务配置。"""
     cfg = make_stand_env_cfg()
@@ -48,20 +72,23 @@ def exo_balance_stand_push_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnv
     cfg = exo_balance_stand_flat_env_cfg(play=play)
 
     if play:
+        # 回放/测试默认使用更强、更频繁的随机扰动，方便肉眼看策略抗推能力。
+        add_random_push_event(
+            cfg,
+            force_range=(-220.0, 220.0),
+            torque_range=(-25.0, 25.0),
+            duration_s=(0.10, 0.24),
+            cooldown_s=(0.35, 0.90),
+        )
         return cfg
 
     # 每隔一段时间给 base_link 一个短促随机外力，训练机器人被推后自己拉回平衡。
-    cfg.events["random_body_impulse"] = EventTermCfg(
-        func=mdp.apply_body_impulse,
-        mode="step",
-        params={
-            "asset_cfg": SceneEntityCfg("robot", body_names=("base_link",)),
-            "force_range": (-120.0, 120.0),
-            "torque_range": (-12.0, 12.0),
-            "duration_s": (0.08, 0.18),
-            "cooldown_s": (0.8, 2.0),
-            "body_point_offset": (0.0, 0.0, 0.18),
-        },
+    add_random_push_event(
+        cfg,
+        force_range=(-120.0, 120.0),
+        torque_range=(-12.0, 12.0),
+        duration_s=(0.08, 0.18),
+        cooldown_s=(0.8, 2.0),
     )
 
     # 抗扰动站立不只要求“不倒”，还要求被推后别一路漂走。

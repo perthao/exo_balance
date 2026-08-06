@@ -83,6 +83,36 @@ python3 scripts/play.py ExoBalance-Stand-Push-Flat \
   --device cuda:0
 ```
 
+回放默认会打开测试扰动，比训练扰动更频繁也更大，方便观察抗推能力：
+
+```text
+测试力：-220 到 220 N
+测试力矩：-25 到 25 Nm
+间隔：0.35 到 0.90 s
+```
+
+想更猛一点：
+
+```bash
+python3 scripts/play.py ExoBalance-Stand-Push-Flat \
+  --checkpoint-file logs/rsl_rl/exo_balance_stand_push/日期时间/model_5999.pt \
+  --device cuda:0 \
+  --push-scale 1.5
+```
+
+想只看安静站立，不加随机扰动：
+
+```bash
+python3 scripts/play.py ExoBalance-Stand-Push-Flat \
+  --checkpoint-file logs/rsl_rl/exo_balance_stand_push/日期时间/model_5999.pt \
+  --device cuda:0 \
+  --test-push False
+```
+
+如果关闭 MuJoCo 窗口后终端暂时没有返回输入行，按一次 `Ctrl+C`。现在 `play.py` 会捕获它并关闭 viewer/env。
+
+注意：`./scripts/run_standing_scene.sh --view` 只看静态 XML，不加载策略，也没有随机扰动。
+
 如果没有图形界面，可以先只做 CPU 零动作检查：
 
 ```bash
