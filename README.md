@@ -27,6 +27,7 @@ urdf/         原始 URDF 导出资料，训练不直接从这里加载
 scripts/README.md                                      运行、训练、测试、回放命令
 src/assets/robots/exo_balance/xmls/README.md           XML、质量、电机、足底接触微调
 src/tasks/stand/README.md                              强化学习任务代码结构
+docs/human_motion_data_and_rewards.md                  人体运动数据下载、论文和模仿奖励设计
 ```
 
 ## 当前训练入口

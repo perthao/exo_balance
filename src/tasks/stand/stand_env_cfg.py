@@ -88,14 +88,15 @@ def make_stand_env_cfg() -> ManagerBasedRlEnvCfg:
             mode="reset",
             params={
                 "pose_range": {
-                    "x": (-0.02, 0.02),
-                    "y": (-0.02, 0.02),
+                    # 每一局都回到同一个标准初始位姿，便于后续做人类动作模仿。
+                    "x": (0.0, 0.0),
+                    "y": (0.0, 0.0),
                     # reset_root_state_uniform 这里写的是绝对高度，不是相对偏移。
                     # 之前写 0.0 会把机器人每次重置到地面以下，导致 base_too_low 立刻终止。
                     "z": (0.993, 0.993),
-                    "roll": (-0.03, 0.03),
-                    "pitch": (-0.03, 0.03),
-                    "yaw": (-0.05, 0.05),
+                    "roll": (0.0, 0.0),
+                    "pitch": (0.0, 0.0),
+                    "yaw": (0.0, 0.0),
                 },
                 "velocity_range": {},
             },

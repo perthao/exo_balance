@@ -156,4 +156,10 @@ src/tasks/stand/config/exo_balance/env_cfgs.py
 src/tasks/stand/config/exo_balance/rl_cfg.py
 ```
 
+人体标准动作数据、论文链接、动作模仿奖励设计看：
+
+```text
+docs/human_motion_data_and_rewards.md
+```
+
 注意：旧 70 kg/配重版本已经删除。旧 checkpoint 不建议继续用于当前 38.5 kg 模型，当前版本请重新训练。
