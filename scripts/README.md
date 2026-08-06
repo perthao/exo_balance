@@ -52,6 +52,14 @@ cd ~/research/exo_balance
 ./scripts/run_push_train.sh --env.scene.num-envs=512 --agent.max-iterations=6000
 ```
 
+如果已经有训练结果，想从最新模型继续训练：
+
+```bash
+./scripts/run_resume_train.sh
+```
+
+它会自动从 `logs/rsl_rl/exo_balance_stand_push/` 里找最新 run 和最新 `model_*.pt`，不用手动输入日期和模型号。
+
 训练时重点看这些指标：
 
 ```text
@@ -64,13 +72,19 @@ Episode_Metrics/mean_action_acc 越小，动作越平稳
 
 ## 3. 看训练结果
 
-训练结束后，选择最新 checkpoint，例如：
+最简单的回放方式：
 
-```text
-logs/rsl_rl/exo_balance_stand_push/日期时间/model_5999.pt
+```bash
+./scripts/run_latest_play.sh
 ```
 
-用策略回放：
+它会自动找到最新 checkpoint，例如：
+
+```text
+logs/rsl_rl/exo_balance_stand_push/最新日期时间/model_最新数字.pt
+```
+
+如果要手动指定某个 checkpoint，也可以直接用 `play.py`：
 
 ```bash
 source ~/miniconda3/etc/profile.d/conda.sh
@@ -96,19 +110,13 @@ yaw 角速度：-0.78 到 0.78 rad/s
 想稍微更猛一点：
 
 ```bash
-python3 scripts/play.py ExoBalance-Stand-Push-Flat \
-  --checkpoint-file logs/rsl_rl/exo_balance_stand_push/日期时间/model_5999.pt \
-  --device cuda:0 \
-  --push-scale 1.2
+./scripts/run_latest_play.sh --push-scale 1.2
 ```
 
 想只看安静站立，不加随机扰动：
 
 ```bash
-python3 scripts/play.py ExoBalance-Stand-Push-Flat \
-  --checkpoint-file logs/rsl_rl/exo_balance_stand_push/日期时间/model_5999.pt \
-  --device cuda:0 \
-  --test-push False
+./scripts/run_latest_play.sh --test-push False
 ```
 
 如果关闭 MuJoCo 窗口后终端暂时没有返回输入行，按一次 `Ctrl+C`。现在 `play.py` 会捕获它并关闭 viewer/env。
@@ -129,6 +137,8 @@ run_standing_scene.sh    一键生成并检查 XML
 train.py                 训练入口，命名对照宇树项目
 play.py                  回放/测试入口，命名对照宇树项目
 run_push_train.sh        一键抗扰动训练
+run_resume_train.sh      从最新 checkpoint 继续训练
+run_latest_play.sh       一键回放最新 checkpoint
 ```
 
 ## 5. 微调位置

@@ -18,7 +18,7 @@ from mjlab.envs import ManagerBasedRlEnv, ManagerBasedRlEnvCfg
 from mjlab.rl import MjlabOnPolicyRunner, RslRlBaseRunnerCfg, RslRlVecEnvWrapper
 from mjlab.tasks.registry import list_tasks, load_env_cfg, load_rl_cfg, load_runner_cls
 from mjlab.utils.gpu import select_gpus
-from mjlab.utils.os import dump_yaml
+from mjlab.utils.os import dump_yaml, get_checkpoint_path
 from mjlab.utils.torch import configure_torch_backends
 
 
@@ -52,7 +52,7 @@ class TrainConfig:
         return TrainConfig(env=env_cfg, agent=agent_cfg)
 
 
-def run_train(task_id: str, cfg: TrainConfig, log_dir: Path) -> None:
+def run_train(task_id: str, cfg: TrainConfig, log_dir: Path, resume_path: Path | None = None) -> None:
     """创建 MuJoCo 并行环境，并交给 RSL-RL 的 PPO runner 训练。"""
     cuda_visible = os.environ.get("CUDA_VISIBLE_DEVICES", "")
     device = "cpu" if cuda_visible == "" else "cuda:0"
@@ -73,6 +73,10 @@ def run_train(task_id: str, cfg: TrainConfig, log_dir: Path) -> None:
     runner = runner_cls(env, asdict(cfg.agent), str(log_dir), device)
     runner.add_git_repo_to_log(__file__)
 
+    if resume_path is not None:
+        print(f"[INFO] 从 checkpoint 继续训练: {resume_path}")
+        runner.load(str(resume_path), map_location=device)
+
     dump_yaml(log_dir / "params" / "env.yaml", asdict(cfg.env))
     dump_yaml(log_dir / "params" / "agent.yaml", asdict(cfg.agent))
     runner.learn(num_learning_iterations=cfg.agent.max_iterations, init_at_random_ep_len=True)
@@ -84,13 +88,22 @@ def launch_training(task_id: str, args: TrainConfig | None = None) -> None:
     args = args or TrainConfig.from_task(task_id)
     log_root_path = Path("logs") / "rsl_rl" / args.agent.experiment_name
     log_dir = log_root_path / datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    resume_path: Path | None = None
+
+    if args.agent.resume:
+        # 按宇树 train.py 的习惯：load_run/load_checkpoint 可以是正则，默认取最新。
+        resume_path = get_checkpoint_path(
+            log_root_path,
+            args.agent.load_run,
+            args.agent.load_checkpoint,
+        )
 
     selected_gpus, _num_gpus = select_gpus(args.gpu_ids)
     os.environ["CUDA_VISIBLE_DEVICES"] = "" if selected_gpus is None else ",".join(map(str, selected_gpus))
     os.environ["MUJOCO_GL"] = "egl"
     os.environ.setdefault("MPLCONFIGDIR", "/tmp/matplotlib")
 
-    run_train(task_id, args, log_dir)
+    run_train(task_id, args, log_dir, resume_path=resume_path)
 
 
 def main() -> None:
