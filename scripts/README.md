@@ -83,21 +83,23 @@ python3 scripts/play.py ExoBalance-Stand-Push-Flat \
   --device cuda:0
 ```
 
-回放默认会打开测试扰动，比训练扰动更频繁也更大，方便观察抗推能力：
+回放默认会打开测试扰动，量级和训练一致，参考宇树 G1 velocity 任务：
 
 ```text
-测试力：-220 到 220 N
-测试力矩：-25 到 25 Nm
-间隔：0.35 到 0.90 s
+x/y 速度：-0.5 到 0.5 m/s
+z 速度：-0.4 到 0.4 m/s
+roll/pitch 角速度：-0.52 到 0.52 rad/s
+yaw 角速度：-0.78 到 0.78 rad/s
+间隔：5.0 到 6.0 s
 ```
 
-想更猛一点：
+想稍微更猛一点：
 
 ```bash
 python3 scripts/play.py ExoBalance-Stand-Push-Flat \
   --checkpoint-file logs/rsl_rl/exo_balance_stand_push/日期时间/model_5999.pt \
   --device cuda:0 \
-  --push-scale 1.5
+  --push-scale 1.2
 ```
 
 想只看安静站立，不加随机扰动：

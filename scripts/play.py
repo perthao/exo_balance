@@ -47,11 +47,11 @@ class PlayConfig:
 
 
 def configure_test_push(env_cfg: Any, enabled: bool, scale: float) -> None:
-    """设置回放测试扰动；默认打开，也可以关闭或整体放大/缩小。"""
-    event = env_cfg.events.get("random_body_impulse")
+    """设置回放测试扰动；默认使用宇树同款速度扰动。"""
+    event = env_cfg.events.get("push_robot")
     if not enabled:
         # 关掉测试扰动后，只看策略自然站立状态。
-        env_cfg.events.pop("random_body_impulse", None)
+        env_cfg.events.pop("push_robot", None)
         return
     if event is None:
         return
@@ -59,9 +59,11 @@ def configure_test_push(env_cfg: Any, enabled: bool, scale: float) -> None:
         raise ValueError("--push-scale 必须大于 0")
 
     params = event.params
-    # 只缩放力和力矩，持续时间/间隔保持环境配置里的测试节奏。
-    params["force_range"] = tuple(float(v) * scale for v in params["force_range"])
-    params["torque_range"] = tuple(float(v) * scale for v in params["torque_range"])
+    # 只缩放速度扰动幅度，间隔保持和训练一致。
+    params["velocity_range"] = {
+        key: tuple(float(v) * scale for v in value)
+        for key, value in params["velocity_range"].items()
+    }
 
 
 def run_play(task_id: str, cfg: PlayConfig) -> None:

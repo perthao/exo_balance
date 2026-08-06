@@ -17,7 +17,7 @@ scripts/README.md
 ```text
 stand_env_cfg.py                         通用站立环境骨架
 config/exo_balance/__init__.py           注册任务名
-config/exo_balance/env_cfgs.py           外骨骼环境参数、扰动力、奖励权重
+config/exo_balance/env_cfgs.py           外骨骼环境参数、速度扰动、奖励权重
 config/exo_balance/rl_cfg.py             PPO 网络和训练轮次
 mdp/actions.py                           关节位置动作和 150 RPM 速度限幅
 mdp/observations.py                      观测量
@@ -27,12 +27,12 @@ mdp/terminations.py                      摔倒/过低终止条件
 
 ## 当前训练策略
 
-当前采用抗扰动站立训练：训练过程中随机给 `base_link` 施加短促外力和力矩，让策略学会被推后回到平衡位置。
+当前采用抗扰动站立训练：训练过程中参考宇树 G1 的做法，随机给机器人根部速度一个扰动，让策略学会被扰动后回到平衡位置。
 
 主要参数位置：
 
 ```text
-扰动力大小：config/exo_balance/env_cfgs.py 里的 random_body_impulse
+速度扰动大小：config/exo_balance/env_cfgs.py 里的 push_robot
 奖励权重：config/exo_balance/env_cfgs.py 里的 rewards
 PPO 网络：config/exo_balance/rl_cfg.py
 默认轮次：config/exo_balance/rl_cfg.py，当前 6000

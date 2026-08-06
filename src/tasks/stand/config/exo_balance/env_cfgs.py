@@ -10,26 +10,30 @@ from src.tasks.stand import mdp
 from src.tasks.stand.stand_env_cfg import make_stand_env_cfg
 
 
-def add_random_push_event(
+UNITREE_G1_PUSH_VELOCITY_RANGE = {
+    # 参考宇树 G1 velocity 任务：用速度扰动，不直接施加 N 级外力。
+    "x": (-0.5, 0.5),
+    "y": (-0.5, 0.5),
+    "z": (-0.4, 0.4),
+    "roll": (-0.52, 0.52),
+    "pitch": (-0.52, 0.52),
+    "yaw": (-0.78, 0.78),
+}
+
+
+def add_velocity_push_event(
     cfg: ManagerBasedRlEnvCfg,
     *,
-    force_range: tuple[float, float],
-    torque_range: tuple[float, float],
-    duration_s: tuple[float, float],
-    cooldown_s: tuple[float, float],
+    velocity_range: dict[str, tuple[float, float]],
+    interval_range_s: tuple[float, float],
 ) -> None:
-    """给环境添加随机推力事件，训练和测试共用这一处定义。"""
-    cfg.events["random_body_impulse"] = EventTermCfg(
-        func=mdp.apply_body_impulse,
-        mode="step",
+    """添加宇树同款速度扰动事件，训练和测试共用这一处定义。"""
+    cfg.events["push_robot"] = EventTermCfg(
+        func=mdp.push_by_setting_velocity,
+        mode="interval",
+        interval_range_s=interval_range_s,
         params={
-            # 推 base_link，比推脚或小连杆更像外界撞到身体。
-            "asset_cfg": SceneEntityCfg("robot", body_names=("base_link",)),
-            "force_range": force_range,
-            "torque_range": torque_range,
-            "duration_s": duration_s,
-            "cooldown_s": cooldown_s,
-            "body_point_offset": (0.0, 0.0, 0.18),
+            "velocity_range": velocity_range,
         },
     )
 
@@ -72,23 +76,19 @@ def exo_balance_stand_push_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnv
     cfg = exo_balance_stand_flat_env_cfg(play=play)
 
     if play:
-        # 回放/测试默认使用更强、更频繁的随机扰动，方便肉眼看策略抗推能力。
-        add_random_push_event(
+        # 回放/测试默认和训练使用同一量级，避免轻模型被测试扰动打得过猛。
+        add_velocity_push_event(
             cfg,
-            force_range=(-220.0, 220.0),
-            torque_range=(-25.0, 25.0),
-            duration_s=(0.10, 0.24),
-            cooldown_s=(0.35, 0.90),
+            velocity_range=UNITREE_G1_PUSH_VELOCITY_RANGE,
+            interval_range_s=(5.0, 6.0),
         )
         return cfg
 
-    # 每隔一段时间给 base_link 一个短促随机外力，训练机器人被推后自己拉回平衡。
-    add_random_push_event(
+    # 参考宇树 G1：每隔 5-6 秒随机设置一次根部速度，训练被扰动后恢复平衡。
+    add_velocity_push_event(
         cfg,
-        force_range=(-120.0, 120.0),
-        torque_range=(-12.0, 12.0),
-        duration_s=(0.08, 0.18),
-        cooldown_s=(0.8, 2.0),
+        velocity_range=UNITREE_G1_PUSH_VELOCITY_RANGE,
+        interval_range_s=(5.0, 6.0),
     )
 
     # 抗扰动站立不只要求“不倒”，还要求被推后别一路漂走。
